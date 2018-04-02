@@ -2,6 +2,90 @@ import logging
 import random
 import bisect
 
+from copy import deepcopy
+from sage.all import *
+import random
+
+def genCentersGridGraph(n, m):
+    G = {}
+    deltas = [[0, 2], [2, 0], [0, -2], [-2, 0]]
+    for x in range(1, 2*n+1, 2):
+        for y in range(1, 2*m+1, 2):
+            for dx, dy in deltas:
+                if 1 <= x+dx <= 2*n and 1 <= y+dy <= 2*m:
+                    G.setdefault((x, y), []).append((x+dx, y+dy))
+                    G.setdefault((x+dx, y+dy), []).append((x, y))
+    for k in G:
+        G[k] = list(set(G[k]))
+    # print "Finished Centers", G.keys()
+    G = Graph(G)
+    # print "After", G.vertices(), len(G.vertices())
+    return Graph(G)
+
+def genDiGridFromCenters(centers):
+    G = {}
+    cycle = [[0, 1], [1, 0], [0, -1], [-1, 0]]
+    for x, y in centers.vertices():
+    # for x in range(1, 2*n+1, 2):
+    #     for y in range(1, 2*m+1, 2):
+        if ((x-1)/2)%2 == ((y-1)/2)%2:
+            aux = cycle
+        else:
+            aux = cycle[::-1]
+        for i in xrange(4):
+            dux, duy = aux[i]
+            dvx, dvy = aux[(i+1)%4]
+            G.setdefault((x+dux, y+duy), []).append((x+dvx, y+dvy))
+    return DiGraph(G)
+
+def randDFS(G, depth):
+    T = {}
+    def DFS(x, y, depth):
+        if y in T or depth <= 0:
+            return
+
+        T.setdefault(x, []).append(y)
+        N = deepcopy(G[y])
+        random.shuffle(N)
+        for w in N:
+            DFS(y, w, depth-1)
+
+    u = random.choice(G.vertices())
+    N = deepcopy(G[u])
+    random.shuffle(N)
+    for v in N:
+        DFS(u, v, depth)
+    return Graph(T)
+
+def randomWalk(G, size):
+    u = random.choice(G.vertices())
+    S = set()
+    S.add(u)
+    current = u
+    while len(S) != size:
+        current = random.choice(G[current])
+        S.add(current)
+    return G.subgraph(list(S))
+
+def removeVertices(G, k):
+    V = random.sample(G.vertices(), k)
+    H = G.subgraph(V)
+    assert H.connected_components_subgraphs()[0].order() == max(H.connected_components_sizes())
+    return H.connected_components_subgraphs()[0]
+
+def getRandomGraph(n, m, k, method=0, depth=10):
+    GridCenters = genCentersGridGraph(n, m)
+    # print "Grid size is", GridCenters.order(), len(G.vertices()), G.vertices()
+    if method == 0:
+        H = randomWalk(GridCenters, k)
+    elif method == 1:
+        H = removeVertices(G, k)
+    elif method == 2:
+        H = randDFS(G, depth)
+    else:
+        raise Exception("Wrong value for method")
+    return genDiGridFromCenters(H)
+
 
 def comulative_distribution_function(probabilities):
 	result = [0]*len(probabilities)
