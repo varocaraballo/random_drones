@@ -22,14 +22,34 @@ def genCentersGridGraph(n, m):
     # print "After", G.vertices(), len(G.vertices())
     return Graph(G)
 
-def initialPositions(n, m):
+def initialPositions(n, m, getAssociatedEdge=False):
     initial = {}
+    associatedEdges = []
     for x in range(1, 2*n+1, 2):
         for y in range(1, 2*m+1, 2):
             if (x/2)%2 == 1:
-                initial[(x, y)] = (x+1, y)
+                pos = (x+1, y)
+                # initial[(x, y)] = (x+1, y)
             else:
-                initial[(x, y)] = (x-1, y)
+                pos = (x-1, y)
+                # initial[(x, y)] = (x-1, y)
+            initial[(x, y)] = pos
+            if getAssociatedEdge:
+                if ((x-1)/2)%2 == 0 and  ((y-1)/2)%2 == 0:
+                    associatedEdges.append((pos, (pos[0]+1, pos[1]+1)))
+                    # associatedEdges[pos] = [pos[0]+1, pos[1]+1]
+                elif ((x-1)/2)%2 == 0 and  ((y-1)/2)%2 == 1:
+                    associatedEdges.append((pos, (pos[0]+1, pos[1]-1)))
+                    # associatedEdges[pos] = [pos[0]+1, pos[1]-1]
+                elif ((x-1)/2)%2 == 1 and  ((y-1)/2)%2 == 1:
+                    associatedEdges.append((pos, (pos[0]-1, pos[1]-1)))
+                    # associatedEdges[pos] = [pos[0]-1, pos[1]-1]
+                else:
+                    associatedEdges.append((pos, (pos[0]-1, pos[1]+1)))
+                    # associatedEdges[pos] = [pos[0]-1, pos[1]+1]
+    if getAssociatedEdge:
+        return initial, associatedEdges
+
     return initial
 
 def genDiGridFromCenters(centers):
@@ -90,12 +110,13 @@ def getRandomGraph(n, m, k, robots, method=0, depth=10):
     if method == 0:
         H = randomWalk(GridCenters, k)
     elif method == 1:
-        H = removeVertices(G, k)
+        H = removeVertices(GridCenters, k)
     elif method == 2:
-        H = randDFS(G, depth)
+        H = randDFS(GridCenters, depth)
     else:
         raise Exception("Wrong value for method")
-    assert H.order() == k
+    if method == 0:
+        assert H.order() == k
     robotCenters = random.sample(H.vertices(), robots)
     positions = {x:initial[x] for x in robotCenters}
     invPos = {}
@@ -151,6 +172,10 @@ def update_simulation_state(g, current_pos, robot, new_pos, new_pos_robot, cover
 	else:
 		new_pos_robot[new_pos] = [robot]
 
+def createTransitionMatrix(G):
+
+    for v in G:
+        pass
 
 
 def simula_drones(g, init_pos_robot, bouncing=False, ni=None, robot_circles=None, edges_circles=None, p = None):
@@ -262,3 +287,64 @@ def simula_drones(g, init_pos_robot, bouncing=False, ni=None, robot_circles=None
 
 
 # simula_drones(my_g, i_p_r, True, None)
+
+def DFS(G, u, v, depth, p):
+    # print "doing", u, v, depth
+    reachable = set()
+
+    def innerDFS(u, v, depth, p):
+        # print "       inner doing", u, v, depth
+        if depth == 0:
+            reachable.add((u, v, p))
+            return
+        for w in G.neighbors_out(v):
+            innerDFS(v, w, depth-1, p*Rational(1/float(len(G.neighbors_out(v)))))
+
+    innerDFS(u, v, depth, p)
+
+    return reachable
+
+
+def getMatrix(G, initialEdges):
+    n = len(initialEdges)
+    # assert len(initialEdges) == n
+    M = [[0 for j in xrange(n)] for i in xrange(n)]
+    i = 0
+    indices = {}
+
+    for e in initialEdges:
+        indices[e] = i
+        i += 1
+    # indices = [u for u, v in initialEdges]
+    for e in initialEdges:
+        reachable = DFS(G, e[0], e[1], 4, 1)
+        # print "from", e, " reachable:"
+        for f in reachable:
+            # print f
+            M[indices[e[:2]]][indices[f[:2]]] = f[-1]
+    return matrix(M)
+
+def distToStationary(M):
+    dist = 0
+    u = Rational(1.0/M.ncols())
+    # print "goal", u
+    for r in M:
+        for i in r:
+            # if abs(i-u) > dist:
+            #     print i
+            dist = max(dist, abs(i-u))
+    return dist
+
+def stepsToEpsilon(n, epsilon):
+    grid = genCentersGridGraph(n, n)
+    grid = genDiGridFromCenters(grid)
+    initPos, assocEdges = initialPositions(n, n, True)
+    M = getMatrix(grid, assocEdges)
+    i = 1
+    X = deepcopy(M)
+    dist = distToStationary(X)
+    while dist > epsilon:
+        X = X*M
+        dist = distToStationary(X)
+        i += 1
+    return i
