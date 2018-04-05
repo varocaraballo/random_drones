@@ -100,3 +100,27 @@ def paths_count(o,d,n):
 	return 0 if d not in current_dict else current_dict[d]
 
 
+def getTorus9Matrix(n):
+	M = [[0 for i in xrange(n**2)] for j in xrange(n**2)]
+	indices = {}
+	c = 0
+
+	for i in xrange(n):
+		for j in xrange(n):
+			indices[(i, j)] = c
+			c += 1
+
+	for i in xrange(n):
+		for j in xrange(n):
+			directions = [1, 0, -1]
+			for dx in directions:
+				for dy in directions:
+					if dx == dy and dy == 0:
+						continue
+					x = (i+dx)%n
+					y = (j+dy)%n
+					ind1 = indices[(i, j)]
+					ind2 = indices[(x, y)]
+					# print i, j, "to", x, y
+					M[ind1][ind2] = 1
+	return matrix(M)
