@@ -6,6 +6,7 @@ from copy import deepcopy
 from sage.all import *
 import random
 
+
 def genCentersGridGraph(n, m):
     G = {}
     deltas = [[0, 2], [2, 0], [0, -2], [-2, 0]]
@@ -22,12 +23,13 @@ def genCentersGridGraph(n, m):
     # print "After", G.vertices(), len(G.vertices())
     return Graph(G)
 
+
 def initialPositions(n, m, getAssociatedEdge=False):
     initial = {}
     associatedEdges = []
     for x in range(1, 2*n+1, 2):
         for y in range(1, 2*m+1, 2):
-            if (x/2)%2 == 1:
+            if (x/2) % 2 == 1:
                 pos = (x+1, y)
                 # initial[(x, y)] = (x+1, y)
             else:
@@ -35,13 +37,13 @@ def initialPositions(n, m, getAssociatedEdge=False):
                 # initial[(x, y)] = (x-1, y)
             initial[(x, y)] = pos
             if getAssociatedEdge:
-                if ((x-1)/2)%2 == 0 and  ((y-1)/2)%2 == 0:
+                if ((x-1)/2) % 2 == 0 and  ((y-1)/2)%2 == 0:
                     associatedEdges.append((pos, (pos[0]+1, pos[1]+1)))
                     # associatedEdges[pos] = [pos[0]+1, pos[1]+1]
-                elif ((x-1)/2)%2 == 0 and  ((y-1)/2)%2 == 1:
+                elif ((x-1)/2) % 2 == 0 and  ((y-1)/2)%2 == 1:
                     associatedEdges.append((pos, (pos[0]+1, pos[1]-1)))
                     # associatedEdges[pos] = [pos[0]+1, pos[1]-1]
-                elif ((x-1)/2)%2 == 1 and  ((y-1)/2)%2 == 1:
+                elif ((x-1)/2) % 2 == 1 and  ((y-1)/2)%2 == 1:
                     associatedEdges.append((pos, (pos[0]-1, pos[1]-1)))
                     # associatedEdges[pos] = [pos[0]-1, pos[1]-1]
                 else:
@@ -51,6 +53,7 @@ def initialPositions(n, m, getAssociatedEdge=False):
         return initial, associatedEdges
 
     return initial
+
 
 def genDiGridFromCenters(centers):
     G = {}
@@ -68,8 +71,10 @@ def genDiGridFromCenters(centers):
             G.setdefault((x+dux, y+duy), []).append((x+dvx, y+dvy))
     return DiGraph(G)
 
+
 def randDFS(G, depth):
     T = {}
+
     def DFS(x, y, depth):
         if y in T or depth <= 0:
             return
@@ -87,6 +92,7 @@ def randDFS(G, depth):
         DFS(u, v, depth)
     return Graph(T)
 
+
 def randomWalk(G, size):
     u = random.choice(G.vertices())
     S = set()
@@ -97,11 +103,13 @@ def randomWalk(G, size):
         S.add(current)
     return G.subgraph(list(S))
 
+
 def removeVertices(G, k):
     V = random.sample(G.vertices(), k)
     H = G.subgraph(V)
     assert H.connected_components_subgraphs()[0].order() == max(H.connected_components_sizes())
     return H.connected_components_subgraphs()[0]
+
 
 def getRandomGraph(n, m, k, robots, method=0, depth=10):
     GridCenters = genCentersGridGraph(n, m)
@@ -122,7 +130,7 @@ def getRandomGraph(n, m, k, robots, method=0, depth=10):
     invPos = {}
     for k, v in positions.iteritems():
         invPos.setdefault(v, []).append(k)
-    return genDiGridFromCenters(H), invPos, H #The grid graph and the graph generated from the centers of the circles
+    return genDiGridFromCenters(H), invPos, H  # The grid graph and the graph generated from the centers of the circles
 
 
 def comulative_distribution_function(probabilities):
@@ -148,7 +156,7 @@ def create_covering_statistics(g):
     cover_statistics = {}
     for p in g:
         for d in g[p]:
-            cover_statistics[(p,d)] = 0
+            cover_statistics[(p, d)] = 0
     return cover_statistics
 
 
@@ -324,6 +332,7 @@ def getMatrix(G, initialEdges):
             M[indices[e[:2]]][indices[f[:2]]] = f[-1]
     return matrix(M)
 
+
 def distToStationary(M):
     dist = 0
     u = Rational(1.0/M.ncols())
@@ -334,6 +343,7 @@ def distToStationary(M):
             #     print i
             dist = max(dist, abs(i-u))
     return dist
+
 
 def stepsToEpsilon(n, epsilon):
     grid = genCentersGridGraph(n, n)
@@ -348,3 +358,11 @@ def stepsToEpsilon(n, epsilon):
         dist = distToStationary(X)
         i += 1
     return i
+
+
+def dirGridMatrix(n):
+    grid = genCentersGridGraph(n, n)
+    grid = genDiGridFromCenters(grid)
+    initPos, assocEdges = initialPositions(n, n, True)
+    M = getMatrix(grid, assocEdges)
+    return M
