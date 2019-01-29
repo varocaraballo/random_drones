@@ -27,24 +27,24 @@ def genCentersGridGraph(n, m):
 def initialPositions(n, m, getAssociatedEdge=False):
     initial = {}
     associatedEdges = []
-    for x in range(1, 2 * n + 1, 2):
-        for y in range(1, 2 * m + 1, 2):
-            if (x / 2) % 2 == 1:
-                pos = (x + 1, y)
+    for x in range(1, 2*n+1, 2):
+        for y in range(1, 2*m+1, 2):
+            if (x/2) % 2 == 1:
+                pos = (x+1, y)
                 # initial[(x, y)] = (x+1, y)
             else:
                 pos = (x - 1, y)
                 # initial[(x, y)] = (x-1, y)
             initial[(x, y)] = pos
             if getAssociatedEdge:
-                if ((x - 1) / 2) % 2 == 0 and ((y - 1) / 2) % 2 == 0:
-                    associatedEdges.append((pos, (pos[0] + 1, pos[1] + 1)))
+                if ((x-1)/2) % 2 == 0 and  ((y-1)/2)%2 == 0:
+                    associatedEdges.append((pos, (pos[0]+1, pos[1]+1)))
                     # associatedEdges[pos] = [pos[0]+1, pos[1]+1]
-                elif ((x - 1) / 2) % 2 == 0 and ((y - 1) / 2) % 2 == 1:
-                    associatedEdges.append((pos, (pos[0] + 1, pos[1] - 1)))
+                elif ((x-1)/2) % 2 == 0 and  ((y-1)/2)%2 == 1:
+                    associatedEdges.append((pos, (pos[0]+1, pos[1]-1)))
                     # associatedEdges[pos] = [pos[0]+1, pos[1]-1]
-                elif ((x - 1) / 2) % 2 == 1 and ((y - 1) / 2) % 2 == 1:
-                    associatedEdges.append((pos, (pos[0] - 1, pos[1] - 1)))
+                elif ((x-1)/2) % 2 == 1 and  ((y-1)/2)%2 == 1:
+                    associatedEdges.append((pos, (pos[0]-1, pos[1]-1)))
                     # associatedEdges[pos] = [pos[0]-1, pos[1]-1]
                 else:
                     associatedEdges.append((pos, (pos[0] - 1, pos[1] + 1)))
@@ -358,3 +358,11 @@ def stepsToEpsilon(n, epsilon):
         dist = distToStationary(X)
         i += 1
     return i
+
+
+def dirGridMatrix(n):
+    grid = genCentersGridGraph(n, n)
+    grid = genDiGridFromCenters(grid)
+    initPos, assocEdges = initialPositions(n, n, True)
+    M = getMatrix(grid, assocEdges)
+    return M
