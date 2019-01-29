@@ -65,20 +65,34 @@ def getDronesGridGraph(n, m):
     '''Returns a triple G, w, paths, where G is the graph obtained in the 2pi model,
     w is a dictionary mapping each edge in G to its probability, and paths id a dictionary
     mapping each edge in G to the path in the circles model'''
-    diamondGraph, circles = getDiamondGraph(n, m)
+    diamondGraph, associatedCircle = getDiamondGraph(n, m)
     G = {}
     w = {}
     paths = {}
-    for u in diamondGraph:
-        if u[1] % 2:
-            continue
-        uPaths = dfs(diamondGraph, u, 4)
-        totalProb = frac(0, 1)
-        for path in uPaths:
+    circles = set(tuple(x) for x in associatedCircle.values())
+    # sync, edge = None, None
+    for center, orientation in circles:
+        sync, u = None, None
+        if (center[1]+1) % 4 == 2:  # Sinchronization point below
+            sync = (center[0], center[1]-1)
+            if orientation == COUNTERCLOCKWISE:
+                u = (sync[0]+1, sync[1]+1)
+            else:  # orientation == CLOCKWISE
+                u = (sync[0]-1, sync[1]+1)
+        else:                     # Synchronization point above
+            sync = (center[0], center[1]+1)
+            if orientation == COUNTERCLOCKWISE:
+                u = ((sync[0]-1, sync[1]-1))
+            else:  # orientation == CLOCKWISE
+                u = ((sync[0]+1, sync[1]-1))
+        syncPointpaths = dfs(diamondGraph, u, 4)
+
+        syncPointProb = frac(0, 1)
+        for path in syncPointpaths:
+            G.setdefault((sync, u), []).append((path[-2], path[-1]))
             p = getPathProbability(diamondGraph, path)
-            totalProb += p
-            G.setdefault(u, []).append(path[-1])
-            w[(u, path[-1])] = p
-            paths[(u, path[-1])] = path
-        assert float(totalProb) == 1.0
+            syncPointProb += p
+            w[((sync, u), (path[-2], path[-1]))] = p
+            paths[((sync, u), (path[-2], path[-1]))] = [sync]+path
+        assert float(syncPointProb) == 1.0
     return G, w, paths
