@@ -1,7 +1,22 @@
 from fractions import Fraction as frac
+import random
 
 CLOCKWISE = 0
 COUNTERCLOCKWISE = 1
+
+
+def getDiamondCenters(n, m):
+    G = {}
+    deltas = [[0, 2], [2, 0], [0, -2], [-2, 0]]
+    for x in range(1, 2*n+1, 2):
+        for y in range(1, 2*m+1, 2):
+            for dx, dy in deltas:
+                if 1 <= x+dx <= 2*n and 1 <= y+dy <= 2*m:
+                    G.setdefault((x, y), []).append((x+dx, y+dy))
+                    G.setdefault((x+dx, y+dy), []).append((x, y))
+    for k in G:
+        G[k] = list(set(G[k]))
+    return G
 
 
 def getDiamondGraph(n, m):
@@ -22,20 +37,6 @@ def getDiamondGraph(n, m):
             G.setdefault((x+dux, y+duy), []).append((x+dvx, y+dvy))
             associatedCircles[((x+dux, y+duy), (x+dvx, y+dvy))] = [(x, y), direction]
     return G, associatedCircles
-
-
-def getDiamondCenters(n, m):
-    G = {}
-    deltas = [[0, 2], [2, 0], [0, -2], [-2, 0]]
-    for x in range(1, 2*n+1, 2):
-        for y in range(1, 2*m+1, 2):
-            for dx, dy in deltas:
-                if 1 <= x+dx <= 2*n and 1 <= y+dy <= 2*m:
-                    G.setdefault((x, y), []).append((x+dx, y+dy))
-                    G.setdefault((x+dx, y+dy), []).append((x, y))
-    for k in G:
-        G[k] = list(set(G[k]))
-    return G
 
 
 def dfs(G, v, pathLength=4):
@@ -79,7 +80,7 @@ def getDronesGridGraph(n, m):
                 u = (sync[0]+1, sync[1]+1)
             else:  # orientation == CLOCKWISE
                 u = (sync[0]-1, sync[1]+1)
-        else:                     # Synchronization point above
+        else:                       # Synchronization point above
             sync = (center[0], center[1]+1)
             if orientation == COUNTERCLOCKWISE:
                 u = ((sync[0]-1, sync[1]-1))
@@ -94,5 +95,116 @@ def getDronesGridGraph(n, m):
             syncPointProb += p
             w[((sync, u), (path[-2], path[-1]))] = p
             paths[((sync, u), (path[-2], path[-1]))] = [sync]+path
-        assert float(syncPointProb) == 1.0
+        # assert float(syncPointProb) == 1.0
     return G, w, paths
+
+
+def randomWalk(n, m, k, osteps):
+    steps = osteps
+    diamondGraph, circles = getDiamondGraph(n, m)
+    G, w, paths = getDronesGridGraph(n, m)
+
+    edges = [(v, u) for v in diamondGraph for u in diamondGraph[v]]
+    # print("edges", len(edges))
+    # assert len(edges) == n*m*4
+
+    timeSinceLastCover = {(u, v): 0 for (u, v) in edges}
+    maxUncoveredTime = {(u, v): -1 for (u, v) in edges}
+    minUncoveredTime = {(u, v): float('inf') for (u, v) in edges}
+    avgUncoveredTime = {(u, v): 0 for (u, v) in edges}
+    totalUncoveredTime = {(u, v): 0 for (u, v) in edges}
+    timesVisited = {(u, v): 0 for (u, v) in edges}
+
+    timesCommunicated = {i: 0 for i in range(k)}
+    timeSinceLastCom = {i: 0 for i in range(k)}
+    maxTimeSinceLastCom = {i: -1 for i in range(k)}
+    minTimeSinceLastCom = {i: float('inf') for i in range(k)}
+    avgTimeSinceLastCom = {i: 0 for i in range(k)}
+    totalUncomTime = {i: 0 for i in range(k)}
+
+    currentPositions = random.sample(G.keys(), k=k)
+
+    while steps:
+        newPositions = [None for i in range(k)]
+        pathsTaken = [None for i in range(k)]
+
+        for i in range(k):
+            u = currentPositions[i]
+            weights = [w[(u, x)] for x in G[u]]
+            v = random.choices(G[u], weights=weights)[0]
+            newPositions[i] = v
+            pathsTaken[i] = paths[(u, v)]
+
+        traversedEdges = set()
+
+        #  Edge cover
+
+        for path in pathsTaken:
+            for i in range(len(path)-2):
+                e = (path[i], path[i+1])
+                traversedEdges.add(e)
+
+        for e in edges:
+            if e not in traversedEdges:
+                timeSinceLastCover[e] += 1
+            else:
+                timesVisited[e] += 1
+                aux = timesVisited[e]
+                totalUncoveredTime[e] += timeSinceLastCover[e]
+                maxUncoveredTime[e] = max(maxUncoveredTime[e], timeSinceLastCover[e])
+                minUncoveredTime[e] = min(minUncoveredTime[e], timeSinceLastCover[e])
+                avgUncoveredTime[e] = avgUncoveredTime[e]*((aux-1)/aux)+timeSinceLastCover[e]/aux
+                timeSinceLastCover[e] = 0
+
+        #  Communication
+
+        communicatingDrones = set()
+
+        for i in range(k):
+            for j in range(i+1, k):
+                if currentPositions[i] == currentPositions[j]:
+                    if i not in communicatingDrones:
+                        timesCommunicated[i] += 1
+                        aux = timesCommunicated[i]
+                        avgTimeSinceLastCom[i] = avgTimeSinceLastCom[i]*((aux-1)/aux)+timeSinceLastCom[i]/aux
+                    if j not in communicatingDrones:
+                        timesCommunicated[j] += 1
+                        aux = timesCommunicated[j]
+                        avgTimeSinceLastCom[j] = avgTimeSinceLastCom[j]*((aux-1)/aux)+timeSinceLastCom[j]/aux
+                    communicatingDrones.add(i)
+                    communicatingDrones.add(j)
+                    totalUncomTime[i] += timeSinceLastCom[i]
+                    totalUncomTime[j] += timeSinceLastCom[j]
+                    maxTimeSinceLastCom[i] = max(maxTimeSinceLastCom[i], timeSinceLastCom[i])
+                    minTimeSinceLastCom[i] = min(minTimeSinceLastCom[i], timeSinceLastCom[i])
+                    maxTimeSinceLastCom[j] = max(maxTimeSinceLastCom[j], timeSinceLastCom[j])
+                    minTimeSinceLastCom[j] = min(minTimeSinceLastCom[j], timeSinceLastCom[j])
+                    timeSinceLastCom[i] = 0
+                    timeSinceLastCom[j] = 0
+
+        for drone in set(range(k)).difference(communicatingDrones):
+            timeSinceLastCom[drone] += 1
+
+        currentPositions = newPositions
+        steps -= 1
+
+    for e in totalUncoveredTime:
+        totalUncoveredTime[e] += timeSinceLastCover[e]
+
+    print("Uncovered edges:", sum(1 for v in timesVisited.values() if v == 0))
+    averageUncovered = sum(totalUncoveredTime.values())/len(totalUncoveredTime)
+    print("Average total time for uncovered edges:", averageUncovered)
+    print("Average max time for uncovered edges:", sum(maxUncoveredTime.values())/len(edges))
+    print("Average min time for uncovered edges:", sum(minUncoveredTime.values())/len(edges))
+    print("Average average time for uncovered edges:", sum(avgUncoveredTime.values())/len(edges))
+    print("Proportion of time:", averageUncovered/osteps)
+
+    print("\nIsolated drones:", sum(1 for v in timesCommunicated.values() if v == 0))
+    averageUncom = sum(totalUncomTime.values())/len(totalUncomTime)
+    print("Average total time for isolated drones:", averageUncom)
+    print("Average max time for isolated drones:", sum(maxTimeSinceLastCom.values())/k)
+    print("Average min time for isolated drones:", sum(minTimeSinceLastCom.values())/k)
+    print("Average average time for isolated drones:", sum(avgTimeSinceLastCom.values())/k)
+    print("Proportion of time:", averageUncom/osteps)
+
+    return (totalUncoveredTime, maxUncoveredTime, minUncoveredTime, avgUncoveredTime), (totalUncomTime, maxTimeSinceLastCom, minTimeSinceLastCom, avgTimeSinceLastCom), (timesVisited, timesCommunicated)
