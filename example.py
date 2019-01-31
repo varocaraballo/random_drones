@@ -2,5 +2,5 @@ import gridGraph as gs
 import sys
 
 if __name__ == '__main__':
-    aux, n, m, k, steps = sys.argv
-    uncovered, isolated, times = gs.randomWalk(10, 10, 10, 10000)
+    n, m, k, steps = map(int, sys.argv[1:])
+    uncovered, isolated, times = gs.randomWalk(n, m, k, steps)

@@ -106,7 +106,7 @@ def randomWalk(n, m, k, osteps):
 
     edges = [(v, u) for v in diamondGraph for u in diamondGraph[v]]
     # print("edges", len(edges))
-    # assert len(edges) == n*m*4
+    assert len(edges) == n*m*4
 
     timeSinceLastCover = {(u, v): 0 for (u, v) in edges}
     maxUncoveredTime = {(u, v): -1 for (u, v) in edges}
@@ -208,3 +208,16 @@ def randomWalk(n, m, k, osteps):
     print("Proportion of time:", averageUncom/osteps)
 
     return (totalUncoveredTime, maxUncoveredTime, minUncoveredTime, avgUncoveredTime), (totalUncomTime, maxTimeSinceLastCom, minTimeSinceLastCom, avgTimeSinceLastCom), (timesVisited, timesCommunicated)
+
+
+def getCols(d):
+    cols = {}
+    maxVal = max(d.values())
+    minVal = min(d.values())
+    for k, v in d.items():
+        col = -int((v-minVal)/(maxVal-minVal)*255)+255
+        col = hex(col).split('x')[-1]
+        while len(col) < 2:
+            col = "0"+col
+        cols[k] = "#ff"+col+col
+    return cols
