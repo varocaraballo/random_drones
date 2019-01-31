@@ -1,5 +1,7 @@
 from fractions import Fraction as frac
 import random
+import itertools
+import bisect
 
 CLOCKWISE = 0
 COUNTERCLOCKWISE = 1
@@ -130,8 +132,15 @@ def randomWalk(n, m, k, osteps):
 
         for i in range(k):
             u = currentPositions[i]
-            weights = [w[(u, x)] for x in G[u]]
-            v = random.choices(G[u], weights=weights)[0]
+            # Python 3.5
+            choices = list(G[u])
+            weights = [w[(u, x)] for x in choices]
+            cumdist = list(itertools.accumulate(weights))
+            x = random.random() * cumdist[-1]
+            v = choices[bisect.bisect(cumdist, x)]
+            # Python 3.7:
+            # weights = [w[(u, x)] for x in G[u]]
+            # v = random.choices(G[u], weights=weights)[0]
             newPositions[i] = v
             pathsTaken[i] = paths[(u, v)]
 
@@ -191,23 +200,32 @@ def randomWalk(n, m, k, osteps):
     for e in totalUncoveredTime:
         totalUncoveredTime[e] += timeSinceLastCover[e]
 
+    nEdges = len(edges)
+
     print("Uncovered edges:", sum(1 for v in timesVisited.values() if v == 0))
-    averageUncovered = sum(totalUncoveredTime.values())/len(totalUncoveredTime)
+    averageUncovered = sum(totalUncoveredTime.values())/nEdges
     print("Average total time for uncovered edges:", averageUncovered)
-    print("Average max time for uncovered edges:", sum(maxUncoveredTime.values())/len(edges))
-    print("Average min time for uncovered edges:", sum(minUncoveredTime.values())/len(edges))
-    print("Average average time for uncovered edges:", sum(avgUncoveredTime.values())/len(edges))
+    averageMaxUncovered = sum(maxUncoveredTime.values())/nEdges
+    print("Average max time for uncovered edges:", averageMaxUncovered)
+    averageMinUncovered = sum(minUncoveredTime.values())/nEdges
+    print("Average min time for uncovered edges:", averageMinUncovered)
+    averageAverageUncovered = sum(avgUncoveredTime.values())/nEdges
+    print("Average average time for uncovered edges:", averageAverageUncovered)
     print("Proportion of time:", averageUncovered/osteps)
 
     print("\nIsolated drones:", sum(1 for v in timesCommunicated.values() if v == 0))
-    averageUncom = sum(totalUncomTime.values())/len(totalUncomTime)
+    averageUncom = sum(totalUncomTime.values())/k
     print("Average total time for isolated drones:", averageUncom)
-    print("Average max time for isolated drones:", sum(maxTimeSinceLastCom.values())/k)
-    print("Average min time for isolated drones:", sum(minTimeSinceLastCom.values())/k)
-    print("Average average time for isolated drones:", sum(avgTimeSinceLastCom.values())/k)
+    averageMaxUncom = sum(maxTimeSinceLastCom.values())/k
+    print("Average max time for isolated drones:", averageMaxUncom)
+    averageMinUncom = sum(minTimeSinceLastCom.values())/k
+    print("Average min time for isolated drones:", averageMinUncom)
+    averageAverageUncom = sum(avgTimeSinceLastCom.values())/k
+    print("Average average time for isolated drones:", averageAverageUncom)
     print("Proportion of time:", averageUncom/osteps)
 
-    return (totalUncoveredTime, maxUncoveredTime, minUncoveredTime, avgUncoveredTime), (totalUncomTime, maxTimeSinceLastCom, minTimeSinceLastCom, avgTimeSinceLastCom), (timesVisited, timesCommunicated)
+    # return (totalUncoveredTime, maxUncoveredTime, minUncoveredTime, avgUncoveredTime), (totalUncomTime, maxTimeSinceLastCom, minTimeSinceLastCom, avgTimeSinceLastCom), (timesVisited, timesCommunicated)
+    return (averageUncovered, averageMaxUncovered, averageMinUncovered, averageAverageUncovered), (averageUncom, averageMaxUncom, averageMinUncom, averageAverageUncom)
 
 
 def getCols(d):
@@ -221,3 +239,12 @@ def getCols(d):
             col = "0"+col
         cols[k] = "#ff"+col+col
     return cols
+
+
+def simulate(n, m, steps):
+    res = []
+    total = n*m
+    delta = int(n*m/100)
+    for k in range(1, total, delta):
+        res.append(randomWalk(n, m, k, steps))
+    return res
