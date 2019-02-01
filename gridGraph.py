@@ -245,6 +245,6 @@ def simulate(n, m, steps):
     res = []
     total = n*m
     delta = int(n*m/100)
-    for k in range(1, total, delta):
+    for k in range(1, total+1, delta):
         res.append(randomWalk(n, m, k, steps))
     return res
