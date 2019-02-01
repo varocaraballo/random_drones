@@ -2,6 +2,7 @@ from fractions import Fraction as frac
 import random
 import itertools
 import bisect
+import pickle
 
 CLOCKWISE = 0
 COUNTERCLOCKWISE = 1
@@ -247,4 +248,19 @@ def simulate(n, m, steps):
     delta = int(n*m/100)
     for k in range(1, total+1, delta):
         res.append(randomWalk(n, m, k, steps))
+    return res
+
+
+def saveData(data, filename):
+    f = open(filename, "wb")
+    pickle.dump(data, filename)
+    f.close()
+    print("Saved.")
+
+
+def loadData(filename):
+    f = open(filename, "rb")
+    res = pickle.load(f)
+    f.close()
+    print("Loaded.")
     return res
