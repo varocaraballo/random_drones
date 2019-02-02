@@ -253,7 +253,7 @@ def simulate(n, m, steps):
 
 def saveData(data, filename):
     f = open(filename, "wb")
-    pickle.dump(data, filename)
+    pickle.dump(data, f)
     f.close()
     print("Saved.")
 
