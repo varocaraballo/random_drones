@@ -203,27 +203,27 @@ def randomWalk(n, m, k, osteps):
 
     nEdges = len(edges)
 
-    print("Uncovered edges:", sum(1 for v in timesVisited.values() if v == 0))
+    # print("Uncovered edges:", sum(1 for v in timesVisited.values() if v == 0))
     averageUncovered = sum(totalUncoveredTime.values())/nEdges
-    print("Average total time for uncovered edges:", averageUncovered)
+    # print("Average total time for uncovered edges:", averageUncovered)
     averageMaxUncovered = sum(maxUncoveredTime.values())/nEdges
-    print("Average max time for uncovered edges:", averageMaxUncovered)
+    # print("Average max time for uncovered edges:", averageMaxUncovered)
     averageMinUncovered = sum(minUncoveredTime.values())/nEdges
-    print("Average min time for uncovered edges:", averageMinUncovered)
+    # print("Average min time for uncovered edges:", averageMinUncovered)
     averageAverageUncovered = sum(avgUncoveredTime.values())/nEdges
-    print("Average average time for uncovered edges:", averageAverageUncovered)
-    print("Proportion of time:", averageUncovered/osteps)
+    # print("Average average time for uncovered edges:", averageAverageUncovered)
+    # print("Proportion of time:", averageUncovered/osteps)
 
-    print("\nIsolated drones:", sum(1 for v in timesCommunicated.values() if v == 0))
+    # print("\nIsolated drones:", sum(1 for v in timesCommunicated.values() if v == 0))
     averageUncom = sum(totalUncomTime.values())/k
-    print("Average total time for isolated drones:", averageUncom)
+    # print("Average total time for isolated drones:", averageUncom)
     averageMaxUncom = sum(maxTimeSinceLastCom.values())/k
-    print("Average max time for isolated drones:", averageMaxUncom)
+    # print("Average max time for isolated drones:", averageMaxUncom)
     averageMinUncom = sum(minTimeSinceLastCom.values())/k
-    print("Average min time for isolated drones:", averageMinUncom)
+    # print("Average min time for isolated drones:", averageMinUncom)
     averageAverageUncom = sum(avgTimeSinceLastCom.values())/k
-    print("Average average time for isolated drones:", averageAverageUncom)
-    print("Proportion of time:", averageUncom/osteps)
+    # print("Average average time for isolated drones:", averageAverageUncom)
+    # print("Proportion of time:", averageUncom/osteps)
 
     # return (totalUncoveredTime, maxUncoveredTime, minUncoveredTime, avgUncoveredTime), (totalUncomTime, maxTimeSinceLastCom, minTimeSinceLastCom, avgTimeSinceLastCom), (timesVisited, timesCommunicated)
     return (averageUncovered, averageMaxUncovered, averageMinUncovered, averageAverageUncovered), (averageUncom, averageMaxUncom, averageMinUncom, averageAverageUncom)
@@ -249,6 +249,31 @@ def simulate(n, m, steps):
     for k in range(1, total+1, delta):
         res.append(randomWalk(n, m, k, steps))
     return res
+
+
+def simulateK(n, m, repetitions, steps):
+    totalSim = []
+    for i in range(repetitions):
+        print("repetition", i+1)
+        res = []
+        total = n*m
+        delta = int(n*m/100)
+        for k in range(1, total+1, delta):
+            print("Random Walk with", k, "drones")
+            res.append(randomWalk(n, m, k, steps))
+        totalSim.append(res)
+    avg = []
+    # return totalSim
+    for d in range(len(totalSim[0])):
+        auxCover = zip(*[res[d][0] for res in totalSim])
+        # print("auxCover", list(auxCover))
+        # print("zip", list(zip(*auxCover)))
+        avgCover = tuple(sum(x) / len(x) for x in auxCover)
+        auxCom = zip(*[res[d][1] for res in totalSim])
+        avgCom = tuple(sum(x) / len(x) for x in auxCom)
+        avg.append((avgCover, avgCom))
+
+    return totalSim, avg
 
 
 def saveData(data, filename):
