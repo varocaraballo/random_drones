@@ -289,3 +289,75 @@ def loadData(filename):
     f.close()
     print("Loaded.")
     return res
+
+
+def broadcast(n, m, k):
+    diamondGraph, circles = getDiamondGraph(n, m)
+    G, w, paths = getDronesGridGraph(n, m)
+
+    edges = [(v, u) for v in diamondGraph for u in diamondGraph[v]]
+    # print("edges", len(edges))
+    assert len(edges) == n*m*4
+
+    drones = list(range(k))
+    source = random.choice(drones)
+
+    dronesCom = set()
+    dronesCom.add(source)
+    currentPositions = random.sample(G.keys(), k=k)
+
+    # print("Initial positions", currentPositions)
+
+    steps = 0
+
+    while len(dronesCom) < k:
+        # print("iteration", steps, "drones that know", len(dronesCom))
+        newPositions = [None for i in range(k)]
+        pathsTaken = [None for i in range(k)]
+
+        for i in range(k):
+            u = currentPositions[i]
+            # Python 3.5
+            choices = list(G[u])
+            weights = [w[(u, x)] for x in choices]
+            cumdist = list(itertools.accumulate(weights))
+            x = random.random() * cumdist[-1]
+            v = choices[bisect.bisect(cumdist, x)]
+            # Python 3.7:
+            # weights = [w[(u, x)] for x in G[u]]
+            # v = random.choices(G[u], weights=weights)[0]
+            newPositions[i] = v
+            pathsTaken[i] = paths[(u, v)]
+
+        edgePositions = {(v, u): [[], [], [], [], []] for v in diamondGraph for u in diamondGraph[v]}
+        for i in range(k):
+            path = pathsTaken[i]
+            # print("len path", len(path))
+            # print(path)
+            for j in range(len(path)-1):
+                e = (path[j], path[j+1])
+                edgePositions[e][j].append(i)
+
+        for i in range(5):
+            for e in edgePositions:
+                # print('e', e, edgePositions[e])
+                s = set(edgePositions[e][i])
+                if len(s.intersection(dronesCom)) > 0:
+                    # print("meeting")
+                    dronesCom.update(s)
+        currentPositions = newPositions
+        steps += 1
+    return steps
+
+
+def simBroadcast(n, m, k):
+    avg = []
+    for d in range(2, 101):
+        print("Simulating with", d, "drones")
+        broadcastD = 0
+        for i in range(k):
+            print("    Simulation", i)
+            broadcastD += broadcast(n, m, d)
+        broadcastD /= k
+        avg.append(broadcastD)
+    return avg
